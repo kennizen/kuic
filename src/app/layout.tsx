@@ -1,14 +1,12 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Inter } from "next/font/google";
-import Navbar from "@/components/navbar/Navbar";
+import MainWrapper from "./MainWrapper";
+import ThemeProvider from "@/providers/ThemeProvider";
 import "./globals.css";
+import 'remixicon/fonts/remixicon.css'
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "Kuic",
-  description: "An WebRTC based peer to peer file transfer application",
-};
 
 export default function RootLayout({
   children,
@@ -17,9 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-slate-900 dark`}>
-        <Navbar />
-        {children}
+      <meta name="description" content="An WebRTC based peer to peer file transfer application"></meta>
+      <title>Kuic</title>
+      <body className={inter.className}>
+        <ThemeProvider>
+          <MainWrapper>{children}</MainWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );
