@@ -37,7 +37,7 @@ const FilePicker = ({ children, onFiles }: IProps) => {
   }
 
   return (
-    <div className="w-[22rem] border border-slate-600 h-[30rem] rounded-md overflow-auto p-4 flex flex-col items-end gap-4">
+    <div className="w-[22rem] border-2 border-slate-600 flex-1 rounded-md overflow-auto p-4 flex flex-col items-end gap-4">
       <button
         onClick={handleAddFiles}
         className="px-2 py-1 rounded-md bg-blue-600 text-sm hover:bg-blue-700 transition-colors"
