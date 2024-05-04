@@ -7,6 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("working")
     router.replace("/application");
   }, []);
 

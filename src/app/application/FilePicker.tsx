@@ -40,9 +40,10 @@ const FilePicker = ({ children, onFiles }: IProps) => {
     <div className="w-[22rem] border-2 border-slate-600 flex-1 rounded-md overflow-auto p-4 flex flex-col items-end gap-4">
       <button
         onClick={handleAddFiles}
-        className="px-2 py-1 rounded-md bg-blue-600 text-sm hover:bg-blue-700 transition-colors"
+        className="px-2 py-1 rounded-md bg-blue-600 text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
       >
         Add Files
+        <i className="ri-file-add-line"></i>
       </button>
       <input type="file" hidden ref={inputRef} multiple onChange={handleOnChange} />
       {children}

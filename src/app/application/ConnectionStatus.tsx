@@ -1,3 +1,5 @@
+import { useRtcCtx } from "./page";
+
 interface IProps {
   type: StatusType;
 }
@@ -5,6 +7,9 @@ interface IProps {
 type StatusType = "connected" | "disconnected" | "not connected" | "checking";
 
 const ConnectionStatus = ({ type }: IProps) => {
+  // hooks
+  const { peerConnection } = useRtcCtx();
+
   // handlers
   function getStatusPill() {
     switch (type) {

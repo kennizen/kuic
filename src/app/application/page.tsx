@@ -7,6 +7,7 @@ import WillNotWork from "./WillNotWork";
 import FilePicker from "./FilePicker";
 import FileCard from "./FileCard";
 import ProgressBar from "./ProgressBar";
+import ReceivedFiles from "./ReceivedFiles";
 
 const servers = {
   iceServers: [
@@ -19,7 +20,12 @@ const servers = {
 type CtxValue = {
   peerConnection: RTCPeerConnection | null;
   dataChannel: RTCDataChannel | null;
+  handleDeleteFile(idx: number): void;
+  userType: Usertype;
+  changeUserType(type: Usertype): void;
 };
+
+type Usertype = "sender" | "receiver";
 
 const rtcCTx = createContext<null | CtxValue>(null);
 
@@ -35,6 +41,18 @@ const Application = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
   const [dataChannel, setDataChannel] = useState<RTCDataChannel | null>(null);
+  const [userType, setUserType] = useState<Usertype>("sender");
+
+  // methods
+  function handleDeleteFile(idx: number) {
+    const tmpFiles = structuredClone(files);
+    tmpFiles.splice(idx, 1);
+    setFiles(tmpFiles);
+  }
+
+  function changeUserType(type: Usertype) {
+    setUserType(type);
+  }
 
   // lifecycles
   useEffect(() => {
@@ -55,7 +73,7 @@ const Application = () => {
   if (!isSupported) return <WillNotWork />;
 
   return (
-    <rtcCTx.Provider value={{ peerConnection, dataChannel }}>
+    <rtcCTx.Provider value={{ peerConnection, dataChannel, handleDeleteFile, userType, changeUserType }}>
       <div className="h-[calc(100dvh-var(--navbar-height))] text-slate-100 flex justify-center">
         <div className="max-w-[60rem] w-full py-8 flex justify-between flex-wrap gap-4 p-4 h-full">
           <div className="flex flex-col gap-24">
@@ -64,11 +82,19 @@ const Application = () => {
           </div>
           <div className="flex flex-col gap-10 items-end h-full">
             <ConnectionStatus type="checking" />
-            <FilePicker onFiles={(files) => setFiles((prev) => [...files, ...prev])}>
-              {files.map((file, i) => (
-                <FileCard key={file.name + i} name={file.name} size={file.size} type={file.type} />
-              ))}
-            </FilePicker>
+            {userType === "sender" ? (
+              <FilePicker onFiles={(files) => setFiles((prev) => [...files, ...prev])}>
+                {files.map((file, i) => (
+                  <FileCard key={file.name + i} name={file.name} size={file.size} type={file.type} idx={i} />
+                ))}
+              </FilePicker>
+            ) : (
+              <ReceivedFiles>
+                {files.map((file, i) => (
+                  <FileCard key={file.name + i} name={file.name} size={file.size} type={file.type} idx={i} />
+                ))}
+              </ReceivedFiles>
+            )}
           </div>
         </div>
       </div>

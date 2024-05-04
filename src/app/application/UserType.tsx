@@ -4,7 +4,6 @@ import { Fragment, useState } from "react";
 import { useRtcCtx } from "./page";
 import { jsonthrow } from "jsonthrow";
 
-type Usertype = "sender" | "receiver";
 type Sdp = {
   iceCan: RTCIceCandidate[];
   sdp: RTCSessionDescriptionInit | null;
@@ -13,7 +12,7 @@ type Sdp = {
 
 const UserType = () => {
   // states
-  const [userType, setUserType] = useState<Usertype>("sender");
+
   const [session, setSession] = useState<Sdp>({
     iceCan: [],
     sdp: null,
@@ -21,13 +20,9 @@ const UserType = () => {
   });
 
   // hooks
-  const { peerConnection } = useRtcCtx();
+  const { peerConnection, changeUserType, userType } = useRtcCtx();
 
   // methods
-  function changeUserType(type: Usertype) {
-    setUserType(type);
-  }
-
   async function generateOffer() {
     if (peerConnection === null) return;
 
