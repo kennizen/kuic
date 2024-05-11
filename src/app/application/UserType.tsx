@@ -1,26 +1,29 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { ChangeEvent, Fragment, useEffect, useState } from "react";
 import { useRtcCtx } from "./page";
 import { jsonthrow } from "jsonthrow";
+import { intoResult } from "@/utils/funtions";
+import { toast } from "react-toastify";
 
 type Sdp = {
   iceCan: RTCIceCandidate[];
   sdp: RTCSessionDescriptionInit | null;
   remoteSdp: RTCSessionDescriptionInit | null;
+  remoteIceCan: RTCIceCandidate[];
 };
 
 const UserType = () => {
   // states
-
   const [session, setSession] = useState<Sdp>({
     iceCan: [],
     sdp: null,
     remoteSdp: null,
+    remoteIceCan: [],
   });
 
   // hooks
-  const { peerConnection, changeUserType, userType } = useRtcCtx();
+  const { peerConnection, changeUserType, userType, connectionStatus } = useRtcCtx();
 
   // methods
   async function generateOffer() {
@@ -29,7 +32,6 @@ const UserType = () => {
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    peerConnection.onicecandidate = handleOnIceCan;
     setSession((prev) => ({ ...prev, sdp: offer }));
   }
 
@@ -39,12 +41,12 @@ const UserType = () => {
     }
   }
 
-  function handleGenerateDisplayOffer() {
-    const [sdp, err] = jsonthrow.stringify(session);
+  function handleGenerateDisplaySdp() {
+    const [sdp, err] = jsonthrow.stringify(session.sdp);
 
     if (err) {
       console.error("Error is stringifying");
-      return "Cannot generate sdp";
+      return;
     }
 
     return btoa(sdp);
@@ -58,7 +60,7 @@ const UserType = () => {
 
       if (err) {
         console.error("Error is stringifying");
-        return "Cannot generate sdp";
+        return;
       }
 
       text = sdp;
@@ -67,12 +69,63 @@ const UserType = () => {
     await navigator.clipboard.writeText(text ? btoa(text) : "");
   }
 
+  function handleAcceptRemoteSdpChange(e: ChangeEvent<HTMLTextAreaElement>) {
+    const [data, err] = intoResult(atob, e.target.value);
+
+    if (err) {
+      toast.error("Invalid offer");
+      return;
+    }
+
+    const [res, error] = jsonthrow.parse<Sdp>(data);
+
+    if (error || res.sdp === undefined) {
+      toast.error("Invalid offer");
+      return;
+    }
+
+    setSession((prev) => ({ ...prev, remoteSdp: res.sdp, remoteIceCan: res.iceCan }));
+  }
+
+  async function handleAcceptOffer() {
+    if (!peerConnection || !session.remoteSdp) return;
+
+    await peerConnection.setRemoteDescription(session.remoteSdp);
+
+    for (let i = 0; i < session.remoteIceCan.length; i++) {
+      await peerConnection.addIceCandidate(session.remoteIceCan[i]);
+    }
+
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    setSession((prev) => ({ ...prev, sdp: answer }));
+  }
+
+  async function handleAcceptAnswer() {
+    if (!peerConnection || !session.remoteSdp) return;
+
+    await peerConnection.setRemoteDescription(session.remoteSdp);
+
+    for (let i = 0; i < session.remoteIceCan.length; i++) {
+      await peerConnection.addIceCandidate(session.remoteIceCan[i]);
+    }
+  }
+
+  // effects
+  useEffect(() => {
+    if (!peerConnection) return;
+    peerConnection.onicecandidate = handleOnIceCan;
+  }, [peerConnection]);
+
   console.log("session", session);
+  console.log("state", connectionStatus, userType);
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-4">
         <button
+          disabled={connectionStatus === "connected" && userType === "receiver"}
           onClick={() => changeUserType("sender")}
           className={`${
             userType === "sender" ? "bg-blue-600" : ""
@@ -82,6 +135,7 @@ const UserType = () => {
         </button>
         <div className="h-[20px] w-[2px] bg-slate-400"></div>
         <button
+          disabled={connectionStatus === "connected" && userType === "sender"}
           onClick={() => changeUserType("receiver")}
           className={`${
             userType === "receiver" ? "bg-green-600" : ""
@@ -102,7 +156,7 @@ const UserType = () => {
                 ) : (
                   <div className="group relative overflow-hidden h-full" onClick={handleCopySdp}>
                     <p className="text-xs text-slate-400 break-words group-hover:blur-sm cursor-pointer transition-all select-none">
-                      {handleGenerateDisplayOffer()}
+                      {handleGenerateDisplaySdp()}
                     </p>
                     <i className="ri-clipboard-line absolute top-1/2 left-1/2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-50%] translate-y-[-50%] pointer-events-none text-xl"></i>
                   </div>
@@ -129,8 +183,12 @@ const UserType = () => {
                 id="data"
                 placeholder="paste answer here..."
                 className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none"
+                onChange={handleAcceptRemoteSdpChange}
               />
-              <button className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700">
+              <button
+                onClick={handleAcceptAnswer}
+                className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700"
+              >
                 Accept answer
               </button>
             </div>
@@ -143,18 +201,34 @@ const UserType = () => {
                 id="data"
                 placeholder="paste offer here..."
                 className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none"
+                onChange={handleAcceptRemoteSdpChange}
               />
-              <button className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700">
+              <button
+                onClick={handleAcceptOffer}
+                className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700"
+              >
                 Accept offer
               </button>
             </div>
             <div className="flex flex-col gap-4">
               <div className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center">
-                  <p className="text-xs text-slate-400">No answer</p>
-                </div>
+                {session.iceCan.length <= 0 && session.sdp === null ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <p className="text-xs text-slate-400">No answer</p>
+                  </div>
+                ) : (
+                  <div className="group relative overflow-hidden h-full" onClick={handleCopySdp}>
+                    <p className="text-xs text-slate-400 break-words group-hover:blur-sm cursor-pointer transition-all select-none">
+                      {handleGenerateDisplaySdp()}
+                    </p>
+                    <i className="ri-clipboard-line absolute top-1/2 left-1/2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-50%] translate-y-[-50%] pointer-events-none text-xl"></i>
+                  </div>
+                )}
               </div>
-              <button className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700">
+              <button
+                onClick={handleCopySdp}
+                className="px-4 py-2 rounded-md outline outline-2 outline-slate-600 hover:bg-slate-600 transition-colors active:bg-slate-700"
+              >
                 Copy answer
               </button>
             </div>

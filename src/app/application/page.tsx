@@ -23,6 +23,7 @@ type CtxValue = {
   handleDeleteFile(idx: number): void;
   userType: Usertype;
   changeUserType(type: Usertype): void;
+  connectionStatus: RTCIceConnectionState;
 };
 
 type Usertype = "sender" | "receiver";
@@ -40,6 +41,7 @@ const Application = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<RTCIceConnectionState>("new");
   const [dataChannel, setDataChannel] = useState<RTCDataChannel | null>(null);
   const [userType, setUserType] = useState<Usertype>("sender");
 
@@ -70,10 +72,20 @@ const Application = () => {
 
   console.log("files", files);
 
+  // effect
+  useEffect(() => {
+    if (!peerConnection) return;
+    peerConnection.oniceconnectionstatechange = () => {
+      setConnectionStatus(peerConnection.iceConnectionState);
+    };
+  }, [peerConnection]);
+
   if (!isSupported) return <WillNotWork />;
 
   return (
-    <rtcCTx.Provider value={{ peerConnection, dataChannel, handleDeleteFile, userType, changeUserType }}>
+    <rtcCTx.Provider
+      value={{ peerConnection, dataChannel, handleDeleteFile, userType, changeUserType, connectionStatus }}
+    >
       <div className="h-[calc(100dvh-var(--navbar-height))] text-slate-100 flex justify-center">
         <div className="max-w-[60rem] w-full py-8 flex justify-between flex-wrap gap-4 p-4 h-full">
           <div className="flex flex-col gap-24">
@@ -81,7 +93,7 @@ const Application = () => {
             <ProgressBar />
           </div>
           <div className="flex flex-col gap-10 items-end h-full">
-            <ConnectionStatus type="checking" />
+            <ConnectionStatus />
             {userType === "sender" ? (
               <FilePicker onFiles={(files) => setFiles((prev) => [...files, ...prev])}>
                 {files.map((file, i) => (
