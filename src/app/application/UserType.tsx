@@ -28,6 +28,7 @@ const UserType = () => {
   // methods
   async function generateOffer() {
     if (peerConnection === null) return;
+    if (peerConnection.localDescription !== null) return;
 
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
@@ -89,6 +90,7 @@ const UserType = () => {
 
   async function handleAcceptOffer() {
     if (!peerConnection || !session.remoteSdp) return;
+    if (peerConnection.remoteDescription !== null) return;
 
     await peerConnection.setRemoteDescription(session.remoteSdp);
 
@@ -104,6 +106,7 @@ const UserType = () => {
 
   async function handleAcceptAnswer() {
     if (!peerConnection || !session.remoteSdp) return;
+    if (peerConnection.remoteDescription !== null) return;
 
     await peerConnection.setRemoteDescription(session.remoteSdp);
 
@@ -116,6 +119,7 @@ const UserType = () => {
   useEffect(() => {
     if (!peerConnection) return;
     peerConnection.onicecandidate = handleOnIceCan;
+    // peerConnection.oniceconnectionstatechange
   }, [peerConnection]);
 
   console.log("session", session);
@@ -182,7 +186,7 @@ const UserType = () => {
                 name="data"
                 id="data"
                 placeholder="paste answer here..."
-                className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none"
+                className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none text-slate-400"
                 onChange={handleAcceptRemoteSdpChange}
               />
               <button
@@ -200,7 +204,7 @@ const UserType = () => {
                 name="data"
                 id="data"
                 placeholder="paste offer here..."
-                className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none"
+                className="border-2 border-slate-600 rounded-md w-[13rem] h-[8rem] p-2 overflow-hidden bg-slate-900 resize-none text-xs focus-visible:outline-none text-slate-400"
                 onChange={handleAcceptRemoteSdpChange}
               />
               <button

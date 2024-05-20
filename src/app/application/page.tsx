@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import ConnectionStatus from "./ConnectionStatus";
 import UserType from "./UserType";
 import WillNotWork from "./WillNotWork";
@@ -8,6 +8,7 @@ import FilePicker from "./FilePicker";
 import FileCard from "./FileCard";
 import ProgressBar from "./ProgressBar";
 import ReceivedFiles from "./ReceivedFiles";
+import ResetConnection from "./ResetConnection";
 
 const servers = {
   iceServers: [
@@ -20,10 +21,10 @@ const servers = {
 type CtxValue = {
   peerConnection: RTCPeerConnection | null;
   dataChannel: RTCDataChannel | null;
-  handleDeleteFile(idx: number): void;
   userType: Usertype;
-  changeUserType(type: Usertype): void;
   connectionStatus: RTCIceConnectionState;
+  handleDeleteFile(idx: number): void;
+  changeUserType(type: Usertype): void;
 };
 
 type Usertype = "sender" | "receiver";
@@ -46,14 +47,27 @@ const Application = () => {
   const [userType, setUserType] = useState<Usertype>("sender");
 
   // methods
-  function handleDeleteFile(idx: number) {
-    const tmpFiles = structuredClone(files);
-    tmpFiles.splice(idx, 1);
-    setFiles(tmpFiles);
-  }
+  const handleDeleteFile = useCallback(
+    (idx: number) => {
+      const tmpFiles = structuredClone(files);
+      tmpFiles.splice(idx, 1);
+      setFiles(tmpFiles);
+    },
+    [files]
+  );
 
-  function changeUserType(type: Usertype) {
+  const changeUserType = useCallback((type: Usertype) => {
     setUserType(type);
+  }, []);
+
+  function handleResetConn() {
+    if (!peerConnection || !dataChannel) return;
+
+    dataChannel.close();
+    peerConnection.close();
+
+    setPeerConnection(null);
+    setDataChannel(null);
   }
 
   // lifecycles
@@ -74,9 +88,13 @@ const Application = () => {
 
   // effect
   useEffect(() => {
-    if (!peerConnection) return;
+    if (!peerConnection || !dataChannel) return;
     peerConnection.oniceconnectionstatechange = () => {
       setConnectionStatus(peerConnection.iceConnectionState);
+    };
+
+    dataChannel.onclose = () => {
+      console.log(dataChannel.readyState);
     };
   }, [peerConnection]);
 
@@ -88,9 +106,10 @@ const Application = () => {
     >
       <div className="h-[calc(100dvh-var(--navbar-height))] text-slate-100 flex justify-center">
         <div className="max-w-[60rem] w-full py-8 flex justify-between flex-wrap gap-4 p-4 h-full">
-          <div className="flex flex-col gap-24">
+          <div className="flex flex-col justify-between gap-8">
             <UserType />
             <ProgressBar />
+            <ResetConnection />
           </div>
           <div className="flex flex-col gap-10 items-end h-full">
             <ConnectionStatus />

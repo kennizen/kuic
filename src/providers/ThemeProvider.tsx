@@ -1,3 +1,5 @@
+"use client"
+
 import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useState } from "react";
 
 interface IProps {

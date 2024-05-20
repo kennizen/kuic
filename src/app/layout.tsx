@@ -1,10 +1,5 @@
-"use client";
-
 import { Inter } from "next/font/google";
-import MainWrapper from "./MainWrapper";
-import ThemeProvider from "@/providers/ThemeProvider";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import Provider from "@/providers/Provider";
 import "./globals.css";
 import "remixicon/fonts/remixicon.css";
 
@@ -20,10 +15,7 @@ export default function RootLayout({
       <meta name="description" content="An WebRTC based peer to peer file transfer application"></meta>
       <title>Kuic</title>
       <body className={inter.className}>
-        <ThemeProvider>
-          <MainWrapper>{children}</MainWrapper>
-          <ToastContainer />
-        </ThemeProvider>
+        <Provider>{children}</Provider>
       </body>
     </html>
   );
