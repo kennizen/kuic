@@ -119,7 +119,6 @@ const UserType = () => {
   useEffect(() => {
     if (!peerConnection) return;
     peerConnection.onicecandidate = handleOnIceCan;
-    // peerConnection.oniceconnectionstatechange
   }, [peerConnection]);
 
   console.log("session", session);

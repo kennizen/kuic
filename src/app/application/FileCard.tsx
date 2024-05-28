@@ -6,9 +6,10 @@ interface IProps {
   name: string;
   type: string;
   size: number;
+  handleRequestToSendFile?: (idx: number) => void;
 }
 
-const FileCard = ({ name, size, type, idx }: IProps) => {
+const FileCard = ({ name, size, type, idx, handleRequestToSendFile }: IProps) => {
   // hooks
   const { handleDeleteFile } = useRtcCtx();
 
@@ -19,7 +20,7 @@ const FileCard = ({ name, size, type, idx }: IProps) => {
           {name}
         </p>
         <div className="flex items-center gap-2">
-          <p className="text-xs text-slate-400">{type},</p>
+          {type !== "" && <p className="text-xs text-slate-400">{type},</p>}
           <p className="text-xs text-slate-400">{formatBytes(size)}</p>
         </div>
       </div>
@@ -32,7 +33,10 @@ const FileCard = ({ name, size, type, idx }: IProps) => {
           >
             <i className="ri-delete-bin-6-line"></i>
           </button>
-          <button className="hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors active:bg-slate-700">
+          <button
+            onClick={() => handleRequestToSendFile?.(idx)}
+            className="hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors active:bg-slate-700"
+          >
             <i className="ri-send-plane-line"></i>
             {/* <i className="ri-loader-4-line"></i> */}
           </button>
