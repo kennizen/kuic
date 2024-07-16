@@ -34,6 +34,10 @@ const FilePicker = ({ children, onFiles }: IProps) => {
     }
 
     onFiles(fi);
+
+    if (!inputRef || !inputRef.current) return;
+
+    inputRef.current.value = "";
   }
 
   return (

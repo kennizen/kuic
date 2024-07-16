@@ -23,8 +23,9 @@ type CtxValue = {
   dataChannel: RTCDataChannel | null;
   userType: Usertype;
   connectionStatus: RTCIceConnectionState;
-  handleDeleteFile(idx: number): void;
-  changeUserType(type: Usertype): void;
+  handleDeleteFile: (idx: number) => void;
+  changeUserType: (type: Usertype) => void;
+  handleResetConn: () => void;
 };
 
 type Usertype = "sender" | "receiver";
@@ -61,13 +62,15 @@ const Application = () => {
   }, []);
 
   function handleResetConn() {
+    setPeerConnection(null);
+    setDataChannel(null);
+
     if (!peerConnection || !dataChannel) return;
 
     dataChannel.close();
     peerConnection.close();
 
-    setPeerConnection(null);
-    setDataChannel(null);
+    setConnectionStatus("new");
   }
 
   // lifecycles
@@ -84,25 +87,33 @@ const Application = () => {
     }
   }, []);
 
-  console.log("files", files);
-
-  // effect
   useEffect(() => {
     if (!peerConnection || !dataChannel) return;
+
     peerConnection.oniceconnectionstatechange = () => {
       setConnectionStatus(peerConnection.iceConnectionState);
     };
 
     dataChannel.onclose = () => {
-      console.log(dataChannel.readyState);
+      console.log("closing channel", dataChannel.readyState);
     };
   }, [peerConnection]);
+
+  console.log("files", files);
 
   if (!isSupported) return <WillNotWork />;
 
   return (
     <rtcCTx.Provider
-      value={{ peerConnection, dataChannel, handleDeleteFile, userType, changeUserType, connectionStatus }}
+      value={{
+        peerConnection,
+        dataChannel,
+        handleDeleteFile,
+        userType,
+        changeUserType,
+        connectionStatus,
+        handleResetConn,
+      }}
     >
       <div className="h-[calc(100dvh-var(--navbar-height))] text-slate-100 flex justify-center">
         <div className="max-w-[60rem] w-full py-8 flex justify-between flex-wrap gap-4 p-4 h-full">
